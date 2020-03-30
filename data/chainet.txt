@@ -1,0 +1,5 @@
+Sequence Top1 led aller
+L0:R0,H|250,L|250
+L1:R0,L|250,H|250,L|250
+L2:R0,L|500,H|250,L|250
+L3:R0,L|750,H|250,L|250

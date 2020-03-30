@@ -1,0 +1,188 @@
+<html>
+	<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'
+	<script src='https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
+	<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>"
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+	<p>&nbsp;</p>
+	<h1 style="text-align: center;">
+		<span id="modulename">Module</span> configuration
+	</h1>
+	<div style="text-align: center;">
+		<p>
+			Version : <span id="version">3.0</span>
+		</p>
+	</div>
+	<div style="text-align: center;">
+		<p>
+			Date build : <span id="builddate">10/08/1900</span>
+		</p>
+	</div>
+	<div style="text-align: center;">
+		<p>
+			Up time : <span id="uptime">un moment</span>
+		</p>
+	</div>
+	<div style="text-align: center;">
+		<p>
+			ESP temperature : <span id="espTemp">123</span>
+		</p>
+	</div>
+	<div style="text-align: center;">
+		<p>
+			<a href="/credential">Credentials</a>-<a href="/reset">Wifi Reset</a>-<a href="/restart">Restart</a>-<a
+				href="/firmware">firmware</a>
+		</p>
+	</div>
+	<hr style="margin-top: 51px; margin-left: auto; width: 177px; margin-right: auto;" />
+	<h2>
+		Sequence [<span id="seqTitle">seqTitle</span>]
+	</h2>
+	<hr />
+	<div>
+
+		<table>
+			<tr>
+				<td bgcolor="#FF0000">
+						
+					<span id="tableBut" />
+
+				<td bgcolor="#00FF00">
+						
+					<span id="tableFiles" />
+				
+				</td>
+			</tr>
+		</table>
+
+	</div>
+	<button onclick="saveConfiguration()" class='btn btn-success btn-lg'>Save</button>
+
+	<script>
+		function pressButton(id) {			
+			changeSetting(id, document.getElementById(id).value)
+		}
+
+		function changeSetting(param, val) {
+			document.getElementById("version").innerHTML = val;
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function () {
+				if (this.readyState == 4 && this.status == 200) {
+					update(this.responseText)
+				}
+			};
+			xhttp.open("GET", "setData?" + param + "=" + String(val),
+				true);
+			xhttp.send();
+
+		};
+
+
+		function saveConfiguration() {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function () {
+				if (this.readyState == 4 && this.status == 200) {
+					update(this.responseText)
+				}
+			};
+			var res = "save=1";
+			const cfgClass = document.getElementsByClassName('light')
+			const cfgAction = document.getElementsByClassName('action')
+			for (i = 0; i < cfgClass.length; i++) {
+				res += '&' + cfgClass[i].id + '=' + cfgClass[i].value+'&A' + i + '=' + cfgAction[i].value;
+			}
+
+			xhttp.open("GET", "setData?" + res, true);
+			xhttp.send();
+		}
+
+		function isSelected(id,sel) {
+			return (sel == id) ? ' selected': ''
+		}
+
+		function buildDropdown(sel) {
+			var res = "";
+			res += '<select class="action">';
+			res += '<option value=0' + isSelected(0,sel)  + ' >X</option>';
+			res += '<option value=1' + isSelected(1,sel)   + '>Y</option>';
+			res += '<option value=2' + isSelected(2,sel)   + '>A</option>';
+			res += '<option value=3' + isSelected(3,sel)   + '>B</option>';
+			res += '<option value=4' + isSelected(4,sel)   + '>L1</option>';
+			res += '<option value=5' + isSelected(5,sel)   + '>R1</option>';
+			res += '<option value=6' + isSelected(6,sel)   + '>L2</option>';
+			res += '<option value=7' + isSelected(7,sel)   + '>R2</option>';
+			res += '<option value=8' + isSelected(8,sel)   + '>SELECT</option>';
+			res += '<option value=9' + isSelected(9,sel)   + '>START</option>';
+			res += '</select>';
+			return res
+		}
+
+
+
+		function buildTR(Light, Gpio, Action) {
+			return '<tr>\
+					<td>' + Light + '</td>\
+					<td><input id="L' + Light + '" class="light" min="0" max="15" style="width: 4em;" type="number" \
+						value ="'+ Gpio + '" onchange="changeSetting(\'L' + Light + '\', this.value)" /> \
+					</td> \
+					<td>' + buildDropdown(Action) +
+					
+					'</td> \
+					<td><input type="button" \
+						onclick="pressButton(\'L' + Light + '\')" /> \
+					</td> \
+					</tr>'
+		}
+
+		function update(responseText) {
+			var myObj = JSON.parse(responseText);
+			document.getElementById("builddate").innerHTML = myObj.module.build_date;
+			document.getElementById("version").innerHTML = myObj.module.version;
+			document.getElementById("modulename").innerHTML = myObj.module.nom;
+			document.getElementById("uptime").innerHTML = myObj.module.uptime;
+			document.getElementById("espTemp").innerHTML = myObj.module.temp;
+			document.getElementById("seqTitle").innerHTML = myObj.sequence.title;
+			
+
+			var lstResBut = "<table><tr><td>Bouton</td><td>GPIO</td><td>Action</td></tr>";
+			for (i in myObj.setting) {
+				light = i;
+				gpioAction = myObj.setting[i].split(',');
+				lstResBut += buildTR(light, gpioAction[0], gpioAction[1]);
+			}
+			lstResBut += "</table>";
+			
+			document.getElementById("tableBut").innerHTML = lstResBut;
+			//table file
+			lstResBut = "Sequence<br>Disponible<br>"
+			lstResBut += '<select size="10">';
+			for (i in myObj.files) {
+				lstResBut += '<option value="' + myObj.files[i] +  '" ondblclick="changeSetting(\'load\',this.value)" >' + myObj.files[i] + '</option>';
+			}
+			lstResBut += "</select>";
+			document.getElementById("tableFiles").innerHTML = lstResBut;
+
+		};
+
+
+
+		function init() {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function () {
+				if (this.readyState == 4 && this.status == 200) {
+					update(this.responseText)
+				}
+			};
+
+			xhttp.open("GET", "status", true);
+			xhttp.send();
+		}
+		window.onload = init;
+	</script>
+
+</body>
+
+</html>
